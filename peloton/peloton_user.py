@@ -1,3 +1,4 @@
+import math
 import requests
 
 class PelotonUser:
@@ -44,3 +45,30 @@ class PelotonUser:
         self.name = resp_json['user_data']['name']
         self.userid = resp_json['user_id']
         self.total_workouts = resp_json['user_data']['total_workouts']
+
+
+    def get_workout_ids(self):
+
+        base_workout_url = f'{self._base_url}/api/user/{self.userid}/workouts?sort_by=-created'
+
+        workout_list = list()
+        page = 0
+        total_pages = math.ceil(self.total_workouts / 100)
+
+        while page < total_pages:
+            workout_url = f'{base_workout_url}&page={page}&limit=100'
+            resp = self.session.get(workout_url)
+
+            if resp.status_code != 200:
+                raise Exception('Failed to fetch workout data') 
+        
+            resp_json = resp.json()
+            workout_list.extend(resp_json['data'])
+
+            page += 1
+
+        workout_ids = list()
+        for workout in workout_list:
+            workout_ids.append(workout.id)
+
+        return workout_ids
