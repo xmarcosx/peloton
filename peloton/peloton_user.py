@@ -1,5 +1,7 @@
 import math
+
 import requests
+
 
 class PelotonUser:
 
@@ -67,8 +69,6 @@ class PelotonUser:
 
             page += 1
 
-        workout_ids = list()
-        for workout in workout_list:
-            workout_ids.append(workout.id)
-
+        # return only the workout ids
+        workout_ids = [x['id'] for x in workout_list]
         return workout_ids
