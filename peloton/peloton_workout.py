@@ -32,3 +32,14 @@ class PelotonWorkout:
         self.fitness_discipline = resp_json['fitness_discipline']
         self.instructor_id = resp_json['ride']['instructor_id']
         self.status = resp_json['status']
+
+    def get_workout_summary(self):
+
+        workout_url = f'{self._base_url}/api/workout/{self.workout_id}/summary'
+
+        resp = self.peloton_user.session.get(workout_url)
+
+        if resp.status_code != 200:
+            raise ValueError('Failed to login using supplied credentials') 
+        
+        resp_json = resp.json()
