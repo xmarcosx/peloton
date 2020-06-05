@@ -1,3 +1,4 @@
+import logging
 import math
 
 import requests
@@ -16,6 +17,7 @@ class PelotonUser:
         
         self.username = username
         self.password = password
+        self.logger = logging.getLogger('peloton')
         self.cycling_ftp = None
         self.email = None
         self.last_workout_epoch = None
@@ -37,16 +39,31 @@ class PelotonUser:
         resp = self.session.post(auth_login_url, json=auth_payload, headers=self._headers)
 
         if resp.status_code != 200:
+            logging.error(f'Failed to login using {self.username}')
             raise ValueError('Failed to login using supplied credentials') 
+
+        self.logger.info(f'Successfully logged in as {self.username}')
         
         resp_json = resp.json()
         
-        self.cycling_ftp = resp_json['user_data']['cycling_ftp']
-        self.email = resp_json['user_data']['email']
-        self.last_workout_epoch = resp_json['user_data']['last_workout_at']
-        self.name = resp_json['user_data']['name']
         self.userid = resp_json['user_id']
-        self.total_workouts = resp_json['user_data']['total_workouts']
+        self.logger.debug(f'Set userid to {self.userid}')
+
+        if 'user_data' in resp_json:
+            self.cycling_ftp = resp_json['user_data']['cycling_ftp']
+            self.logger.debug(f'Set cycling_ftp to {self.cycling_ftp}')
+
+            self.email = resp_json['user_data']['email']
+            self.logger.debug(f'Set email to {self.email}')
+
+            self.last_workout_epoch = resp_json['user_data']['last_workout_at']
+            self.logger.debug(f'Set last_workout_epoch to {self.last_workout_epoch}')
+
+            self.name = resp_json['user_data']['name']
+            self.logger.debug(f'Set name to {self.name}')
+
+            self.total_workouts = resp_json['user_data']['total_workouts']
+            self.logger.debug(f'Set total_workouts to {self.total_workouts}')
 
 
     def get_workout_ids(self):
@@ -71,4 +88,7 @@ class PelotonUser:
 
         # return only the workout ids
         workout_ids = [x['id'] for x in workout_list]
+
+        self.logger.info(f'Returning {len(workout_ids)} workout ids')
+
         return workout_ids
