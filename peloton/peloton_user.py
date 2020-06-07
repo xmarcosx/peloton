@@ -23,6 +23,7 @@ class PelotonUser:
         self.last_workout_epoch = None
         self.name = None
         self.userid = None
+        self.workout_ids = None
 
         self.session = requests.Session()
         self.__login()
@@ -86,9 +87,9 @@ class PelotonUser:
 
             page += 1
 
-        # return only the workout ids
-        workout_ids = [x['id'] for x in workout_list]
+        # creates list of only the workout ids
+        self.workout_ids = [x['id'] for x in workout_list]
 
-        self.logger.info(f'Returning {len(workout_ids)} workout ids')
+        self.logger.info(f'Returning {len(self.workout_ids)} workout ids')
 
-        return workout_ids
+        return self.workout_ids
