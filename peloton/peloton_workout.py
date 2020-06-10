@@ -27,7 +27,7 @@ class PelotonWorkout:
             logging.error(f'Failed to fetch workout id {self.workout_id}')
             raise ValueError(f'Failed to fetch workout id {self.workout_id}') 
         
-        self.logger.info(f'Successfully fetched workout id {self.workout_id}')
+        self.logger.debug(f'Successfully fetched workout id {self.workout_id}')
 
         resp_json = resp.json()
 
@@ -52,6 +52,13 @@ class PelotonWorkout:
         self.status = resp_json['status']
         self.logger.debug(f'Set status to {self.status}')
 
+        self.ride_id = resp_json['ride']['id']
+        self.logger.debug(f'Set ride id to {self.ride_id}')
+
+        self.ride_title = resp_json['ride']['title']
+        self.logger.debug(f'Set ride title to {self.ride_title}')
+
+
     def get_workout_summary(self):
 
         workout_url = f'{self._base_url}/api/workout/{self.workout_id}/summary'
@@ -61,11 +68,13 @@ class PelotonWorkout:
         if resp.status_code != 200:
             raise ValueError(f'Failed to get summary workout data for id {self.workout_id}') 
         
-        self.logger.info(f'Successfully fetched summary workout data for id {self.workout_id}')
+        self.logger.debug(f'Successfully fetched summary workout data for id {self.workout_id}')
 
         resp_json = resp.json()
 
         self.workout_summary = dict()
+
+        # calories
         self.workout_summary['calories'] = resp_json['calories']
         self.logger.debug(f'Set summary.calories to {self.workout_summary["calories"]}')
 
@@ -93,7 +102,7 @@ class PelotonWorkout:
         if resp.status_code != 200:
             raise ValueError(f'Failed to get performance graph for workout id {self.workout_id}') 
         
-        self.logger.info(f'Successfully fetched performance graph for id {self.workout_id}')
+        self.logger.debug(f'Successfully fetched performance graph for id {self.workout_id}')
 
         resp_json = resp.json()
 
@@ -102,3 +111,21 @@ class PelotonWorkout:
         # metrics including heart rate zones
         self.performance_graph['heart_rate_zones'] = next((item for item in resp_json['metrics'] if resp_json['metrics']['display_name'] == 'Heart Rate'), None)
         self.logger.debug(f'Set performance_graph.heart_rate_zones')
+
+    def get_ride_details(self):
+
+        ride_details_url = f'{self._base_url}/api/ride/{self.ride_id}/details'
+
+        resp = self.peloton_user.session.get(ride_details_url)
+
+        if resp.status_code != 200:
+            raise ValueError(f'Failed to get ride id {self.ride_id} details') 
+        
+        self.logger.debug(f'Successfully fetched ride id {self.ride_id} details')
+
+        resp_json = resp.json()
+
+        self.ride = dict()
+
+        self.ride['title'] = resp_json['ride']['title']
+        self.logger.debug(f'Set ride.title to {self.ride["title"]}')
