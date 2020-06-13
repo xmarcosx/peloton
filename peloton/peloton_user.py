@@ -3,6 +3,9 @@ import math
 
 import requests
 
+from google.cloud import bigquery
+import pandas as pd
+
 
 class PelotonUser:
 
@@ -63,6 +66,15 @@ class PelotonUser:
             self.name = resp_json['user_data']['name']
             self.logger.debug(f'Set name to {self.name}')
 
+            self.last_name = resp_json['user_data']['last_name']
+            self.logger.debug(f'Set last_name to {self.last_name}')
+
+            self.first_name = resp_json['user_data']['first_name']
+            self.logger.debug(f'Set first_name to {self.first_name}')
+
+            self.gender = resp_json['user_data']['gender']
+            self.logger.debug(f'Set gender to {self.gender}')
+
             self.total_workouts = resp_json['user_data']['total_workouts']
             self.logger.debug(f'Set total_workouts to {self.total_workouts}')
 
@@ -93,3 +105,36 @@ class PelotonUser:
         self.logger.info(f'Returning {len(self.workout_ids)} workout ids')
 
         return self.workout_ids
+
+    def get_bigquery_job_config(self):
+        job_config = bigquery.LoadJobConfig(
+            schema=[
+                bigquery.SchemaField('user_id', 'STRING'),
+                bigquery.SchemaField('last_name', 'STRING'),
+                bigquery.SchemaField('first_name', 'STRING'),
+                bigquery.SchemaField('display_name', 'STRING'),
+                bigquery.SchemaField('gender', 'STRING'),
+                bigquery.SchemaField('email', 'STRING'),
+                bigquery.SchemaField('last_workout', 'TIMESTAMP'),
+                bigquery.SchemaField('total_workouts', 'INTEGER'),
+            ],
+            write_disposition='WRITE_TRUNCATE'
+        )
+
+        return job_config
+
+    def to_df(self):
+        output = {
+            'user_id': [self.userid],
+            'last_name': [self.last_name],
+            'first_name': [self.first_name],
+            'display_name': [self.name],
+            'gender': [self.gender],
+            'email': [self.email],
+            'last_workout': [pd.to_datetime(self.last_workout_epoch, unit='s')],
+            'total_workouts': [self.total_workouts]
+        }
+
+        df = pd.DataFrame(output)
+
+        return df

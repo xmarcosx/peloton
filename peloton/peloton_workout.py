@@ -2,6 +2,9 @@ import logging
 
 import requests
 
+from google.cloud import bigquery
+import pandas as pd
+
 import peloton_user
 
 
@@ -34,6 +37,9 @@ class PelotonWorkout:
         self.created_at_epoch = resp_json['created_at']
         self.logger.debug(f'Set created_at to {self.created_at_epoch}')
 
+        self.is_total_work_personal_record = resp_json['is_total_work_personal_record']
+        self.logger.debug(f'Set is_total_work_personal_record to {self.is_total_work_personal_record}')
+
         self.device_type = resp_json['device_type']
         self.logger.debug(f'Set device_type to {self.device_type}')
 
@@ -48,6 +54,9 @@ class PelotonWorkout:
 
         self.instructor_id = resp_json['ride']['instructor_id']
         self.logger.debug(f'Set ride\'s instructor_id to {self.instructor_id}')
+
+        self.user_id = resp_json['user_id']
+        self.logger.debug(f'Set user_id to {self.user_id}')
 
         self.status = resp_json['status']
         self.logger.debug(f'Set status to {self.status}')
@@ -112,20 +121,36 @@ class PelotonWorkout:
         self.performance_graph['heart_rate_zones'] = next((item for item in resp_json['metrics'] if resp_json['metrics']['display_name'] == 'Heart Rate'), None)
         self.logger.debug(f'Set performance_graph.heart_rate_zones')
 
-    def get_ride_details(self):
 
-        ride_details_url = f'{self._base_url}/api/ride/{self.ride_id}/details'
+    def get_bigquery_job_config(self):
+        job_config = bigquery.LoadJobConfig(
+            schema=[
+                bigquery.SchemaField('workout_id', 'STRING'),
+                bigquery.SchemaField('user_id', 'STRING'),
+                bigquery.SchemaField('ride_id', 'STRING'),
+                bigquery.SchemaField('created_at', 'TIMESTAMP'),
+                bigquery.SchemaField('fitness_discipline', 'STRING'),
+                bigquery.SchemaField('is_total_work_personal_record', 'BOOLEAN'),
+                bigquery.SchemaField('status', 'STRING'),
+            ],
+            write_disposition='WRITE_TRUNCATE'
+        )
 
-        resp = self.peloton_user.session.get(ride_details_url)
+        return job_config
 
-        if resp.status_code != 200:
-            raise ValueError(f'Failed to get ride id {self.ride_id} details') 
-        
-        self.logger.debug(f'Successfully fetched ride id {self.ride_id} details')
 
-        resp_json = resp.json()
+    def to_df(self):
+        output = {
+            'workout_id': [self.workout_id],
+            'user_id': [self.peloton_user.userid],
+            'ride_id': [self.ride_id],
+            'created_at': [pd.to_datetime(self.created_at_epoch, unit='s')],
+            'fitness_discipline': [self.fitness_discipline.capitalize()],
+            'is_total_work_personal_record': [self.is_total_work_personal_record],
+            'status': [self.status],
+        }
 
-        self.ride = dict()
+        df = pd.DataFrame(output)
 
-        self.ride['title'] = resp_json['ride']['title']
-        self.logger.debug(f'Set ride.title to {self.ride["title"]}')
+        return df
+
