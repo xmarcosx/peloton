@@ -52,7 +52,6 @@ class PelotonRide:
 
         self.fitness_discipline = resp_json['ride']['fitness_discipline_display_name']
         self.logger.debug(f'Set fitness_discipline to {self.fitness_discipline}')
-        
 
 
     def get_bigquery_job_config(self):
