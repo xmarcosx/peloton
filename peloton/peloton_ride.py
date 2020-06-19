@@ -53,6 +53,9 @@ class PelotonRide:
         self.fitness_discipline = resp_json['ride']['fitness_discipline_display_name']
         self.logger.debug(f'Set fitness_discipline to {self.fitness_discipline}')
 
+        self.difficulty_estimate = resp_json['ride']['difficulty_estimate']
+        self.logger.debug(f'Set difficulty_estimate to {self.difficulty_estimate}')
+
 
     def get_bigquery_job_config(self):
         job_config = bigquery.LoadJobConfig(
