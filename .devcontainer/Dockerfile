@@ -27,4 +27,4 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requ
 #    && rm -rf /var/lib/apt/lists/*
 # ENV DEBIAN_FRONTEND=dialog
 
-
+ENTRYPOINT ["../main.py"]
