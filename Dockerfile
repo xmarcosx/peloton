@@ -16,3 +16,5 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requ
    && rm -rf /tmp/pip-tmp
 
 COPY ./ .
+
+ENTRYPOINT ["python3 peloton/main.py"]
