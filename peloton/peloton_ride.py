@@ -12,15 +12,16 @@ class PelotonRide:
 
     _base_url = 'https://api.onepeloton.com'
     _headers = {
-            'Content-Type': 'application/json',
-            'User-Agent': 'peloton'
-        }
+        'Content-Type': 'application/json',
+        'User-Agent': 'peloton'
+    }
 
     # constructor
     def __init__(self, peloton_user, ride_id):
 
         self.peloton_user = peloton_user
         self.ride_id = ride_id
+        self.ride_type_display_name = None
         self.logger = logging.getLogger('peloton')
         
         ride_url = f'{self._base_url}/api/ride/{self.ride_id}/details'
@@ -57,12 +58,26 @@ class PelotonRide:
         self.logger.debug(f'Set difficulty_estimate to {self.difficulty_estimate}')
 
 
+    def get_ride_types(self):
+        ride_types_url = f'{self._base_url}/api/ride/metadata_mappings'
+        resp = self.peloton_user.session.get(ride_types_url)
+
+        if resp.status_code != 200:
+            logging.error(f'Failed to fetch ride type ids {self.ride_id}')
+            raise ValueError(f'Failed to fetch ride type ids {self.ride_id}') 
+        
+        self.logger.debug(f'Successfully fetched ride type ids {self.ride_id}')
+
+        resp_json = resp.json()
+        return resp_json['class_types']
+
+
     def get_bigquery_job_config(self):
         job_config = bigquery.LoadJobConfig(
             schema=[
                 bigquery.SchemaField('ride_id', 'STRING'),
-                bigquery.SchemaField('ride_type_id', 'STRING'),
                 bigquery.SchemaField('instructor_id', 'STRING'),
+                bigquery.SchemaField('ride_type', 'STRING'),
                 bigquery.SchemaField('title', 'STRING'),
                 bigquery.SchemaField('description', 'STRING'),
                 bigquery.SchemaField('duration_minutes', 'INTEGER'),
@@ -77,8 +92,8 @@ class PelotonRide:
     def to_df(self):
         output = {
             'ride_id': [self.ride_id],
-            'ride_type_id': [self.ride_type_id],
             'instructor_id': [self.instructor_id],
+            'ride_type': [self.ride_type_display_name],
             'title': [self.title],
             'description': [self.description],
             'duration_minutes': [self.duration / 60],
