@@ -115,28 +115,39 @@ class PelotonWorkout:
         self.logger.debug(f'Set distance to {self.distance_miles}')
 
 
-    def get_performance_graph_df(self):
+    def get_workout_details(self):
 
-        performance_graph_url = f'{self._base_url}/api/workout/{self.workout_id}/performance_graph'
+        workout_details_url = f'{self._base_url}/api/workout/{self.workout_id}/performance_graph'
 
-        resp = self.peloton_user.session.get(performance_graph_url)
+        resp = self.peloton_user.session.get(workout_details_url)
 
         if resp.status_code != 200:
-            raise ValueError(f'Failed to get performance graph for workout id {self.workout_id}') 
+            raise ValueError(f'Failed to get details for workout id {self.workout_id}') 
         
-        self.logger.debug(f'Successfully fetched performance graph for id {self.workout_id}')
+        self.logger.debug(f'Successfully fetched details for workout id {self.workout_id}')
 
         resp_json = resp.json()
 
-        performance_graph = next((metric for metric in resp_json['metrics'] if metric['display_name'] == 'Heart Rate'), None)
+        # performance graph
+        self.performance_graph = next((metric for metric in resp_json['metrics'] if metric['display_name'] == 'Heart Rate'), None)
 
         # running pace
+        self.avg_pace = None
         self.avg_pace_dict = next((summary for summary in resp_json['average_summaries'] if summary['display_name'] == 'Avg Pace'), None)
-        
+
         if self.avg_pace_dict is not None:
             self.avg_pace = self.avg_pace_dict['value']
-        else:
-            self.avg_pace = 0.0
+
+        # best mile
+        self.best_mile = None
+        if 'splits' in resp_json['splits_data']:
+            self.splits_dict = next((splits for splits in resp_json['splits_data']['splits'] if splits['is_best'] == True), None)
+
+            if self.splits_dict is not None:
+                self.best_mile = self.splits_dict['seconds'] / 60
+
+
+    def get_performance_graph_df(self):
 
         output = {
             'workout_id': [],
@@ -147,13 +158,13 @@ class PelotonWorkout:
             'duration_seconds': [],
         }
 
-        if performance_graph is not None:
+        if self.performance_graph is not None:
             # if performance_graph has key 'zones'
-            if 'zones' in performance_graph:
+            if 'zones' in self.performance_graph:
                 # if value of zones is not None
                 #if performance_graph['zones'] is not None:
                 # iterate through each zone
-                for zone in performance_graph['zones']:
+                for zone in self.performance_graph['zones']:
                     if 'duration' in zone:
                         output['workout_id'].append(self.workout_id)
                         output['display_name'].append(zone['display_name'])
@@ -184,6 +195,7 @@ class PelotonWorkout:
                 bigquery.SchemaField('average_pace', 'FLOAT'),
                 bigquery.SchemaField('average_speed', 'FLOAT'),
                 bigquery.SchemaField('maximum_speed', 'FLOAT'),
+                bigquery.SchemaField('best_mile', 'FLOAT'),
                 bigquery.SchemaField('average_heart_rate', 'FLOAT'),
                 bigquery.SchemaField('maximum_heart_rate', 'FLOAT'),
                 bigquery.SchemaField('is_total_work_personal_record', 'BOOLEAN'),
@@ -208,6 +220,7 @@ class PelotonWorkout:
             'average_pace': [self.avg_pace],
             'average_speed': [self.avg_speed],
             'maximum_speed': [self.max_speed],
+            'best_mile': [self.best_mile],
             'average_heart_rate': [self.avg_heart_rate],
             'maximum_heart_rate': [self.max_heart_rate],
             'is_total_work_personal_record': [self.is_total_work_personal_record],
