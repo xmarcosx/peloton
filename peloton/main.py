@@ -4,6 +4,7 @@
 import os
 
 from google.cloud import bigquery
+from google.cloud import secretmanager
 import pandas as pd
 
 import log
@@ -13,12 +14,19 @@ import peloton_ride
 import peloton_workout
 
 USERNAME = os.environ['USERNAME']
-PASSWORD = os.environ['PASSWORD']
+GCP_PROJECT_ID = os.environ['GCP_PROJECT_ID']
 
 # configure logging
 logger = log.setup_custom_logger('peloton')
 
+# initialize bigquery
 client = bigquery.Client()
+
+# initalize secret manager and access secret
+client = secretmanager.SecretManagerServiceClient()
+name = client.secret_version_path(GCP_PROJECT_ID, 'peloton', 'latest')
+response = client.access_secret_version(name)
+PASSWORD = response.payload.data.decode('UTF-8')
 
 # %% [markdown]
 # # Users
