@@ -23,9 +23,9 @@ logger = log.setup_custom_logger('peloton')
 client = bigquery.Client()
 
 # initalize secret manager and access secret
-client = secretmanager.SecretManagerServiceClient()
-name = client.secret_version_path(GCP_PROJECT_ID, 'peloton', 'latest')
-response = client.access_secret_version(name)
+manager = secretmanager.SecretManagerServiceClient()
+name = manager.secret_version_path(GCP_PROJECT_ID, 'peloton', 'latest')
+response = manager.access_secret_version(name)
 PASSWORD = response.payload.data.decode('UTF-8')
 
 # %% [markdown]
@@ -142,4 +142,5 @@ payload = pd.concat([instructor.to_df() for instructor in instructors])
 job = client.load_table_from_dataframe(payload, table_id, job_config=instructors[0].get_bigquery_job_config())
 
 job.result()
+
 
