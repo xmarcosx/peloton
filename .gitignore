@@ -1,4 +1,4 @@
-.env
+.env*
 !.env-sample
 peloton.log
 service.json
