@@ -13,8 +13,10 @@ import peloton_user
 import peloton_ride
 import peloton_workout
 
-USERNAME = os.environ['USERNAME']
-GCP_PROJECT_ID = os.environ['GCP_PROJECT_ID']
+USERNAME=os.environ['USERNAME']
+GCP_PROJECT_ID=os.environ['GCP_PROJECT_ID']
+SECRET_MANAGER=os.environ['SECRET_MANAGER']
+BIGQUERY_DATASET=os.environ['BIGQUERY_DATASET']
 
 # configure logging
 logger = log.setup_custom_logger('peloton')
@@ -24,7 +26,7 @@ client = bigquery.Client()
 
 # initalize secret manager and access secret
 manager = secretmanager.SecretManagerServiceClient()
-name = manager.secret_version_path(GCP_PROJECT_ID, 'peloton', 'latest')
+name = manager.secret_version_path(GCP_PROJECT_ID, SECRET_MANAGER, 'latest')
 response = manager.access_secret_version(name)
 PASSWORD = response.payload.data.decode('UTF-8')
 
@@ -38,7 +40,7 @@ user = peloton_user.PelotonUser(USERNAME, PASSWORD)
 
 
 # %%
-table_id = 'peloton.users'
+table_id = f'{BIGQUERY_DATASET}.users'
 
 job = client.load_table_from_dataframe(user.to_df(), table_id, job_config=user.get_bigquery_job_config())
 
@@ -65,7 +67,7 @@ details = [workout.get_workout_details() for workout in workouts]
 # %%
 # send workout data to BigQuery
 
-table_id = 'peloton.workouts'
+table_id = f'{BIGQUERY_DATASET}.workouts'
 
 payload = pd.concat([workout.to_df() for workout in workouts])
 
@@ -77,7 +79,7 @@ job.result()
 # %%
 # send performance graph data to BigQuery
 
-# table_id = 'peloton.performance_graphs'
+# table_id = f'{BIGQUERY_DATASET}.performance_graphs'
 
 # job_config = bigquery.LoadJobConfig(
 #     schema=[
@@ -116,7 +118,7 @@ for ride in rides:
 
 
 # %%
-table_id = 'peloton.rides'
+table_id = f'{BIGQUERY_DATASET}.rides'
 
 payload = pd.concat([ride.to_df() for ride in rides])
 
@@ -131,16 +133,20 @@ job.result()
 instructor_ids = [ride.instructor_id for ride in rides]
 unique_instructor_ids = list(dict.fromkeys(instructor_ids))
 
-instructors = [peloton_instructor.PelotonInstructor(instructor_id) for instructor_id in unique_instructor_ids]
+instructors = [peloton_instructor.PelotonInstructor(instructor_id) for instructor_id in unique_instructor_ids if instructor_id is not None]
 
 
 # %%
-table_id = 'peloton.instructors'
+table_id = f'{BIGQUERY_DATASET}.instructors'
 
 payload = pd.concat([instructor.to_df() for instructor in instructors])
 
 job = client.load_table_from_dataframe(payload, table_id, job_config=instructors[0].get_bigquery_job_config())
 
 job.result()
+
+
+# %%
+
 
 
