@@ -40,7 +40,7 @@ user = peloton_user.PelotonUser(USERNAME, PASSWORD)
 
 
 # %%
-table_id = f'{BIGQUERY_DATASET}.users'
+table_id = f'{GCP_PROJECT_ID}.{BIGQUERY_DATASET}.users'
 
 job = client.load_table_from_dataframe(user.to_df(), table_id, job_config=user.get_bigquery_job_config())
 
@@ -67,7 +67,7 @@ details = [workout.get_workout_details() for workout in workouts]
 # %%
 # send workout data to BigQuery
 
-table_id = f'{BIGQUERY_DATASET}.workouts'
+table_id = f'{GCP_PROJECT_ID}.{BIGQUERY_DATASET}.workouts'
 
 payload = pd.concat([workout.to_df() for workout in workouts])
 
@@ -118,7 +118,7 @@ for ride in rides:
 
 
 # %%
-table_id = f'{BIGQUERY_DATASET}.rides'
+table_id = f'{GCP_PROJECT_ID}.{BIGQUERY_DATASET}.rides'
 
 payload = pd.concat([ride.to_df() for ride in rides])
 
@@ -137,7 +137,7 @@ instructors = [peloton_instructor.PelotonInstructor(instructor_id) for instructo
 
 
 # %%
-table_id = f'{BIGQUERY_DATASET}.instructors'
+table_id = f'{GCP_PROJECT_ID}.{BIGQUERY_DATASET}.instructors'
 
 payload = pd.concat([instructor.to_df() for instructor in instructors])
 
